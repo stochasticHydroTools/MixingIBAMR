@@ -8,10 +8,13 @@ MAIN=main_PC# Overdamped limit
 ## where IBAMR has been built.
 IBAMR_SRC_DIR = ???
 IBAMR_BUILD_DIR = ???
+MIXING_SRC_DIR = src
 
 ######################################################################
 ## Include variables specific to the particular IBAMR build.
 include $(IBAMR_BUILD_DIR)/config/make.inc
+
+VPATH=$(MIXING_SRC_DIR)
 
 ######################################################################
 ## Update compiler flags.
@@ -21,9 +24,8 @@ include $(IBAMR_BUILD_DIR)/config/make.inc
 
 #LDFLAGS  += <stuff>
 #LIBS     += -L$(HYDRO_DIR) -lHydroAnalysis -L/usr/lib64/ -lgfortran -lfftw3 -lfftw3f -lm
-CPPFLAGS += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
-CFLAGS   += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
-CXXFLAGS += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
+CFLAGS   += -O -Wall -DDISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
+CXXFLAGS += -O -Wall -DDISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
 #FCFLAGS  += <stuff>
 
 ######################################################################
@@ -44,11 +46,11 @@ main3d:
 	touch stamp-3d
 	$(MAKE) PDIM=3 main-3d
 
-main-2d: $(IBAMR_LIB_2D) $(IBTK_LIB_2D) $(OBJS) $(SOURCES) $(HYDRO_DIR)/libHydroAnalysis.a
+main-2d: $(IBAMR_LIB_2D) $(IBTK_LIB_2D) $(OBJS) $(SOURCES) # $(HYDRO_DIR)/libHydroAnalysis.a
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) \
 	$(IBAMR_LIB_2D) $(IBTK_LIB_2D) $(LIBS) -DNDIM=$(PDIM) -o main2d
 
-main-3d: $(IBAMR_LIB_3D) $(IBTK_LIB_3D) $(OBJS) $(SOURCES) $(HYDRO_DIR)/libHydroAnalysis.a
+main-3d: $(IBAMR_LIB_3D) $(IBTK_LIB_3D) $(OBJS) $(SOURCES) # $(HYDRO_DIR)/libHydroAnalysis.a
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) \
 	$(IBAMR_LIB_3D) $(IBTK_LIB_3D) $(LIBS) -DNDIM=$(PDIM) -o main3d
 
