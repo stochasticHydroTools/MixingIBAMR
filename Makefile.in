@@ -1,0 +1,58 @@
+######################################################################
+## Choose which version of the time stepping to use
+#MAIN=main# Inertial code
+MAIN=main_PC# Overdamped limit
+
+######################################################################
+## Here specify the location of the IBAMR source and the location
+## where IBAMR has been built.
+IBAMR_SRC_DIR = ???
+IBAMR_BUILD_DIR = ???
+
+######################################################################
+## Include variables specific to the particular IBAMR build.
+include $(IBAMR_BUILD_DIR)/config/make.inc
+
+######################################################################
+## Update compiler flags.
+## It is possible to perform analysis of the results using the HydroAnalysis (HydroLib) code
+## However, this is only for experts and this code is not distributed with MixingIBAMR
+## We therefore turn it off below
+
+#LDFLAGS  += <stuff>
+#LIBS     += -L$(HYDRO_DIR) -lHydroAnalysis -L/usr/lib64/ -lgfortran -lfftw3 -lfftw3f -lm
+CPPFLAGS += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
+CFLAGS   += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
+CXXFLAGS += -D DISABLE_ANALYSIS_CODE #-I$(HYDRO_DIR)
+#FCFLAGS  += <stuff>
+
+######################################################################
+## Build the IB tester application.
+SOURCES = $(MAIN).C AdvDiffOperator.C AdvDiffOperator.h BoussinesqForcing.C BoussinesqForcing.h
+OBJS = $(MAIN).o AdvDiffOperator.o BoussinesqForcing.o
+
+default:
+	@echo "make one of: main2d, main3d"
+
+main2d:
+	if (test -f stamp-3d); then $(MAKE) clean; fi
+	touch stamp-2d
+	$(MAKE) PDIM=2 main-2d
+
+main3d:
+	if (test -f stamp-2d); then $(MAKE) clean; fi
+	touch stamp-3d
+	$(MAKE) PDIM=3 main-3d
+
+main-2d: $(IBAMR_LIB_2D) $(IBTK_LIB_2D) $(OBJS) $(SOURCES) $(HYDRO_DIR)/libHydroAnalysis.a
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) \
+	$(IBAMR_LIB_2D) $(IBTK_LIB_2D) $(LIBS) -DNDIM=$(PDIM) -o main2d
+
+main-3d: $(IBAMR_LIB_3D) $(IBTK_LIB_3D) $(OBJS) $(SOURCES) $(HYDRO_DIR)/libHydroAnalysis.a
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) \
+	$(IBAMR_LIB_3D) $(IBTK_LIB_3D) $(LIBS) -DNDIM=$(PDIM) -o main3d
+
+clean:
+	$(RM) main2d main3d core
+	$(RM) *.o *.lo *.objs *.ii *.int.c stamp-[23]d
+	$(RM) -r .libs
