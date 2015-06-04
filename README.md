@@ -23,6 +23,8 @@ F. Balboa and J. Bell and R. Delgado-Buscalioni and A. Donev and T. G. Fai and B
 SIAM J. Multiscale Modeling and Simulation, 10(4):1369-1408, 2012 [arXiv:1108.5188]
 (but note that this code only implements the incompressible equations, see fluam code for compressible)
 
+Note: Make sure you are using the correct main*.C (inertial or overdamped) for each input file (see comments)!
+
 --------------------
 A. Inertial code main.C
 

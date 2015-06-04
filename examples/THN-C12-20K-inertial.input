@@ -1,3 +1,5 @@
+// This uses the inertial algorithm (main.C)
+
 // This specific file is in 2d for h=1mm and solves the INERTIAL equations (use with main.C)
 // Simulates the latest experiments by Cedric in Fabrizio Croccolo's group
 // for the THN-C12 50% mixture under 20K temperature difference

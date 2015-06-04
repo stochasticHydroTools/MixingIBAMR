@@ -1,3 +1,5 @@
+// This uses the overdamped algorithm (main_PC.C)
+
 // Solves fluct NS equation for velocity first over one time step for u:
 // du/dt + grad(pi) + u*grad(u) = eta*Lap(u) + stoch - gamma*c*g_hat
 // div(u) = 0
@@ -15,7 +17,7 @@ SEED = 0                             // RNG seed (zero for clock)
 // System size:
 //----------------
 LY = 0.1                            // Height of box
-ASPECT = 4                          // Aspect ratio (length/height)
+ASPECT = 1                          // Aspect ratio (length/height)
 
 // Discretization parameters:
 //----------------
@@ -213,7 +215,7 @@ SORET_DIFFERENCE_FORM = "CONSERVATIVE" // div(u_s*c)
 CENTER_U_ADV_DIFF = FALSE
 
 INSStaggeredHierarchyIntegrator {
-   num_cycles           = 1
+   num_cycles           = 2
    viscous_time_stepping_type    = "BACKWARD_EULER" // "TRAPEZOIDAL_RULE"
    convective_time_stepping_type = "FORWARD_EULER"
    convective_op_type            = "CENTERED"
@@ -309,7 +311,7 @@ INSStaggeredStochasticForcing {
 
 AdvDiffSemiImplicitHierarchyIntegrator {
    diffusion_time_stepping_type  = SORET_TIME_STEPPING_TYPE
-   convective_time_stepping_type = "TRAPEZOIDAL_RULE"
+   convective_time_stepping_type = "MIDPOINT_RULE"
       // Note that midpoint and trapezoidal are the same since adv.vel. is constant
    convective_op_type            = "CENTERED"
    convective_difference_form    = "CONSERVATIVE"

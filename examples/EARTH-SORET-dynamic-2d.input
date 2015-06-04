@@ -1,3 +1,5 @@
+// This uses the inertial algorithm (main.C)
+
 // Solves fluct NS equation for velocity first over one time step for u:
 // du/dt + grad(pi) + u*grad(u) = eta*Lap(u) + stoch - gamma*c*g_hat
 // div(u) = 0
