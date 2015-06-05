@@ -1,5 +1,3 @@
-// This uses the inertial algorithm (main.C)
-
 // Solves fluct NS equation for velocity first over one time step for u:
 // du/dt + grad(pi) + u*grad(u) = eta*Lap(u) + stoch - gamma*c*g_hat
 // div(u) = 0
@@ -17,21 +15,21 @@ SEED = 0                             // RNG seed (zero for clock)
 // System size:
 //----------------
 LY = 0.1                            // Height of box
-LX = 0.8
+LX = 0.654
+NX = 256
 THICKNESS = LY                    // Thickness of sample in z direction (in 2D)
 
 // Discretization parameters:
 //----------------
 PERIODIC = 0 // Is y axes periodic
-NY = 32                              // Grid size y axis
-NX = 256
-CFL = 1 // Viscous CFL number (determines time step)
+NY = 40                              // Grid size y axis
+CFL = 1 // Diffusive CFL number (determines time step)
 
-N_STEPS = 50001                       // Number of time steps
+N_STEPS = 2001                       // Number of time steps
 N_STEPS_POST = 1                    // How often to do HydroGrid analysis
 N_STEPS_SNAPSHOT = 0             // How often to write out HydroGrid results
-N_STEPS_SKIP = 10000                // How many steps to skip initially
-N_STEPS_CHECK = 100                  // How often to print statistics
+N_STEPS_SKIP =    200                // How many steps to skip initially
+N_STEPS_CHECK = 10                  // How often to print statistics
 PROJECT_Y = FALSE                    // Analyze projection along y
 N_STEPS_DUMP = 0 // How often IBAMR dumps hydrodynamic variables to disk
 
@@ -78,7 +76,7 @@ STD_C = sqrt(C_VAR*MOLMASS / RHO / DZ) // Concentration = sqrt(M/rho/dz)
 VARIANCE = 1.0 // Extra scaling of spectra in HydroGrid
 
 // Time step (kept constant)
-DT = CFL*DY^2 / NU
+DT = CFL*DY^2 / KAPPA
 
 // Soret stuff:
 GRADT =  (1-PERIODIC) * DTEMP  / (NY*DY) // Temperature gradient
@@ -100,6 +98,11 @@ C_TOP = C_AV + GRADC*LY/2
 //---------------------------------------------------------
 
 Main {
+   // Whether to do overdamped (TRUE) or inertial (FALSE)
+   //use_split_time_stepping = FALSE // Use this in the presence of gravity
+   use_split_time_stepping = TRUE // Use this in the absence of gravity
+   
+
 // log file parameters
    log_file_name    = "GRADFLEX-temperature-2d.log"
    log_all_nodes    = FALSE
@@ -196,8 +199,9 @@ ForcingFunction { // Additional forcing in concentration equation
 SORET_TIME_STEPPING_TYPE = "TRAPEZOIDAL_RULE"
 SORET_CONVECTIVE_OP = "CENTERED"
 SORET_DIFFERENCE_FORM = "CONSERVATIVE" // div(u_s*c)
-// For overdamped dynamics this needs to be false:
-CENTER_U_ADV_DIFF = FALSE
+
+// This is only used if use_split_time_stepping = TRUE and is IMPORTANT:
+CENTER_U_ADV_DIFF = TRUE // Since we are doing inertial here with splitting this has to be TRUE
 
 INSStaggeredHierarchyIntegrator {
    num_cycles           = 1 // We use a splitting method here which only requires one velocity solve
@@ -463,11 +467,11 @@ GriddingAlgorithm {
    max_levels = 1
 
    largest_patch_size {
-      level_0 = NX, NY
+      level_0 = 512, 512
    }
 
    smallest_patch_size {
-      level_0 = 32,  NY
+      level_0 = 4,  4
    }
 }
 

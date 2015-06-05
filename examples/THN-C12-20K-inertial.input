@@ -1,5 +1,3 @@
-// This uses the inertial algorithm (main.C)
-
 // This specific file is in 2d for h=1mm and solves the INERTIAL equations (use with main.C)
 // Simulates the latest experiments by Cedric in Fabrizio Croccolo's group
 // for the THN-C12 50% mixture under 20K temperature difference
@@ -106,7 +104,7 @@ C_TOP = C_AV + GRADC*LY/2
 //---------------------------------------------------------
 
 Main {
-   // Whether to do overdamped (TRUE) or inertial (TRUE)
+   // Whether to do overdamped (TRUE) or inertial (FALSE)
    use_split_time_stepping = FALSE
 
 // log file parameters
@@ -210,8 +208,6 @@ ForcingFunction { // Additional forcing in concentration equation
 SORET_TIME_STEPPING_TYPE = "TRAPEZOIDAL_RULE"
 SORET_CONVECTIVE_OP = "CENTERED"
 SORET_DIFFERENCE_FORM = "CONSERVATIVE" // div(u_s*c)
-// For overdamped dynamics this needs to be false:
-CENTER_U_ADV_DIFF = FALSE // Only used if use_split_time_stepping = TRUE
 
 INSStaggeredHierarchyIntegrator {
    num_cycles           = 1 // We use a splitting method here which only requires one velocity solve

@@ -1,5 +1,3 @@
-// This uses the overdamped algorithm (main_PC.C)
-
 // This specific file is in 2d for h=1mm and solves the OVERDAMPED equations (use with main_PC.C)
 // Simulates the latest experiments by Cedric in Fabrizio Croccolo's group
 // for the THN-C12 50% mixture under 20K temperature difference

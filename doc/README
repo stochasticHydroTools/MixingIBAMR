@@ -1,0 +1,84 @@
+The code main.C give second-order accuracy when there is no gravity,
+i.e., when the concentration/temperature (scalar) equation does not feed back into the velocity equation
+In this case we can avoid a second fluid solve and gain efficiency while still being second-order accurate.
+
+It solves the fluct NS equation for velocity first over one time step for u:
+du/dt + grad(pi) + u*grad(u) = eta*Lap(u) + stoch - gamma*c*g_hat
+div(u) = 0
+where gamma is a gravity-like constant, and g_hat=(0,1) in 2D and (0,0,1) in 3D.
+After velocity solver completes we then solve
+dc/dt + u*grad(c) + div(u_s*c) = kappa*Lap(c) + stoch
+where u_s is an analytically-prescribed 'Soret' advection field
+The div(u_s*c) term is handled implicitly, while u*grad(c) is handled explicitly
+
+The term div(u_s*c) is used for the case when the Soret flux ~c*(1-c)*grad(T) is linearized for small c as c*grad(T)~c*u_s and is treated (implicitly) as if it were advection (see examples/GRADFLEX-dynamic-2d.input).
+If c is not small but nearly equal to the mean c0, then the Soret flux ~c*(1-c)*grad(T) can be taken to be constant ~c0*(1-c0)*grad(T) and it only enters via the Neumann boundary conditions as a constant boundary flux (see examples/SORET-dynamic-2d.input).
+
+The code supports two types of temporal integrators:
+
+--------------------
+1. If use_split_time_stepping = TRUE, the fluid and advection-diffusion solver are treated using a sequential splitting integrator. First the fluid is advanced and then the adv-diff solver is advanced, keeping the advection velocity u used to evaluate u*grad(c) fixed at either:
+- 0.5*(u(n)+u(n+1)) if CENTER_U_ADV_DIFF=TRUE, or
+- u(n+1) otherwise.
+If CENTER_U_ADV_DIFF=TRUE the scheme is a second-order integrator for the NS+AdvDiff equations but *only* for the case when there is no gravity, i.e., when the velocity equation is independent of the concentration. Two cycles should be used for concentration (since advection is treated explicitly), and the velocity can use one cycle if creeping flow, or two for full nonlinear NS. 
+If CENTER_U_ADV_DIFF=FALSE the scheme is first-order accurate including also for the overdamped (infinite Schmidt number) limit if backward Euler is used for velocity together with rho=0.
+
+IMPORTANT: By default, use_split_time_stepping=TRUE and CENTER_U_ADV_DIFF=FALSE
+
+--------------------
+
+2. If use_split_time_stepping = FALSE than the default IBAMR integrator is used, which is second-order accurate including in the presence of gravity (see IBAMR example navier_stokes/ex6). This is 
+only true for inertial dynamics (non-overdamped), for second-order accuracy in the overdamped limit in the presence of gravity use main_PC.C, see below. 
+
+The default IBAMR integrator itself supports two options:
+
+A. If you only use one cycle for the velocity, then what happens is:
+
+(1) solve AD using u(n) and either Euler or Adams-Bashfort (without fluctuations only) for advective term.
+(2) solve NS for u(n+1) using the most recently computed values of the concentration to compute a centered approximation to the forcing.
+(3) If more than one cycle requested for AD solver, solve AD using u(n), u(n+1) and desired approximation of advective term (midpoint or trapezoidal).
+
+This can be made second-order if you use:
+
+INSStaggeredHierarchyIntegrator:
+   num_cycles           = 1
+AdvDiffSemiImplicitHierarchyIntegrator:
+   num_cycles           = 2
+
+For example, the fluid solver uses 1 cycle with Adams-Bashforth for advection and Crank-Nicolson for diffusion, see examples/THN-C12-20K.input for illustration:
+1. Estimate concentration (scalars) at n+1/2 using v^n
+2. Update velocity using concentration at n+1/2 and Adams-Bashforth for advective terms (if not creeping flow)
+3. Update concentration to n+1 using v^(n+1/2)=(v^n+v^(n+1/2))/2
+You could also do Adams-Bashforth for the concentration solve and get away with only one concentration solve + one N-S solve per time step, but this does not work with fluctuations.
+
+---------
+
+B. If you do multiple cycles in *both* solvers, the number of cycles must be equal, and what happens is: first solve AD, then solve NS:
+
+u(n+1) := u(n)
+for cycle = 0, 1, ...
+   solve AD using most recent approximations to u(n) and u(n+1)
+   solve NS for an updated approximation to u(n+1) and the most recently computed values of the concentration to compute a centered approximation to the Boussinesq forcing.
+end
+
+See (33+34) in Staggered paper (http://cims.nyu.edu/~donev/FluctHydro/Staggered.pdf) except that as the Boussinesq forcing is currently implemented, it will use c(n) and c(n+1) in the first N-S solve to compute the forcing. This can be changed in BoussinesqForcing.C if desired.
+
+===================================================================
+
+The code main_PC.C gives second-order accuracy even when gravity is present (Boussinesq forcing is active).
+It solves the same equations but it implements a second-order predictor-corrector method specifically designed for the overdamped limit (in which the only remaining variable is concentration and velocity is just an auxilliary field).
+
+Time step loop:
+   - initialize solvers
+   - first Stokes solve for u(*,n+1)
+   - first concentration solve, using u_adv = u(*,n+1)
+   - second Stokes solve for u(n+1) 
+   - second concentration solve, using u_adv = u(n+1) and midpoint rule
+   - teardown solvers
+
+The fluid velocity should use BACKWARD_EULER with rho=0 (steady Stokes).
+The convective time-stepping for the concentration equation must be MIDPOINT_RULE, so that in the first step, it uses
+   u(*,n+1)*grad(c(n))
+and in the second step, it uses
+   u(n+1)*grad((c(n)+c(n+1,*))/2)
+See examples/EARTH-SORET-dynamic-2d.input.
